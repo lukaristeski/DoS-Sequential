@@ -1,0 +1,55 @@
+<html>
+<head>
+<title>TrafficGenerator.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #2aacb8;}
+.s4 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+TrafficGenerator.java</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">io</span><span class="s2">.</span><span class="s1">IOException</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">net</span><span class="s2">.</span><span class="s1">HttpURLConnection</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">net</span><span class="s2">.</span><span class="s1">URL</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">concurrent</span><span class="s2">.</span><span class="s1">ExecutorService</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">concurrent</span><span class="s2">.</span><span class="s1">Executors</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">TrafficGenerator </span><span class="s2">{</span>
+    <span class="s0">private static final int </span><span class="s1">NUM_THREADS </span><span class="s2">= </span><span class="s3">20</span><span class="s2">;</span>
+    <span class="s0">private static final int </span><span class="s1">REQUESTS_PER_THREAD </span><span class="s2">= </span><span class="s3">10</span><span class="s2">;</span>
+
+    <span class="s0">public static void </span><span class="s1">main</span><span class="s2">(</span><span class="s1">String</span><span class="s2">[] </span><span class="s1">args</span><span class="s2">) </span><span class="s0">throws </span><span class="s1">IOException </span><span class="s2">{</span>
+        <span class="s1">ExecutorService executor </span><span class="s2">= </span><span class="s1">Executors</span><span class="s2">.</span><span class="s1">newFixedThreadPool</span><span class="s2">(</span><span class="s1">NUM_THREADS</span><span class="s2">);</span>
+        <span class="s1">String urlString </span><span class="s2">= </span><span class="s4">&quot;http://localhost:8080&quot;</span><span class="s2">;</span>
+
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">i </span><span class="s2">= </span><span class="s3">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">NUM_THREADS</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+            <span class="s1">executor</span><span class="s2">.</span><span class="s1">submit</span><span class="s2">(() </span><span class="s1">-&gt; </span><span class="s2">{</span>
+                <span class="s0">for </span><span class="s2">(</span><span class="s0">int </span><span class="s1">j </span><span class="s2">= </span><span class="s3">0</span><span class="s2">; </span><span class="s1">j </span><span class="s2">&lt; </span><span class="s1">REQUESTS_PER_THREAD</span><span class="s2">; </span><span class="s1">j</span><span class="s2">++) {</span>
+                    <span class="s0">try </span><span class="s2">{</span>
+                        <span class="s1">URL url </span><span class="s2">= </span><span class="s0">new </span><span class="s1">URL</span><span class="s2">(</span><span class="s1">urlString</span><span class="s2">);</span>
+                        <span class="s1">HttpURLConnection connection </span><span class="s2">= (</span><span class="s1">HttpURLConnection</span><span class="s2">) </span><span class="s1">url</span><span class="s2">.</span><span class="s1">openConnection</span><span class="s2">();</span>
+                        <span class="s1">connection</span><span class="s2">.</span><span class="s1">setRequestMethod</span><span class="s2">(</span><span class="s4">&quot;GET&quot;</span><span class="s2">);</span>
+                        <span class="s0">int </span><span class="s1">responseCode </span><span class="s2">= </span><span class="s1">connection</span><span class="s2">.</span><span class="s1">getResponseCode</span><span class="s2">();</span>
+                        <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;Thread: &quot; </span><span class="s2">+ </span><span class="s1">Thread</span><span class="s2">.</span><span class="s1">currentThread</span><span class="s2">().</span><span class="s1">getId</span><span class="s2">() +</span>
+                                <span class="s4">&quot; - Response Code: &quot; </span><span class="s2">+ </span><span class="s1">responseCode</span><span class="s2">);</span>
+                        <span class="s1">connection</span><span class="s2">.</span><span class="s1">disconnect</span><span class="s2">();</span>
+                    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">IOException e</span><span class="s2">) {</span>
+                        <span class="s1">System</span><span class="s2">.</span><span class="s1">err</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;Request failed: &quot; </span><span class="s2">+ </span><span class="s1">e</span><span class="s2">.</span><span class="s1">getMessage</span><span class="s2">());</span>
+                    <span class="s2">}</span>
+                <span class="s2">}</span>
+            <span class="s2">});</span>
+        <span class="s2">}</span>
+        <span class="s1">executor</span><span class="s2">.</span><span class="s1">shutdown</span><span class="s2">();</span>
+    <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

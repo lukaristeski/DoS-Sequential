@@ -1,0 +1,106 @@
+<html>
+<head>
+<title>Main.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #7a7e85;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Main.java</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">io</span><span class="s2">.</span><span class="s1">BufferedReader</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">io</span><span class="s2">.</span><span class="s1">IOException</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">io</span><span class="s2">.</span><span class="s1">InputStreamReader</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">HashMap</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">Map</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">regex</span><span class="s2">.</span><span class="s1">Matcher</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">regex</span><span class="s2">.</span><span class="s1">Pattern</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">Main </span><span class="s2">{</span>
+
+    <span class="s0">public static void </span><span class="s1">main</span><span class="s2">(</span><span class="s1">String</span><span class="s2">[] </span><span class="s1">args</span><span class="s2">) {</span>
+        <span class="s3">// tcpdump</span>
+        <span class="s1">String</span><span class="s2">[] </span><span class="s1">command </span><span class="s2">= {</span><span class="s4">&quot;tcpdump&quot;</span><span class="s2">, </span><span class="s4">&quot;-i&quot;</span><span class="s2">, </span><span class="s4">&quot;any&quot;</span><span class="s2">, </span><span class="s4">&quot;port&quot;</span><span class="s2">, </span><span class="s4">&quot;8080&quot;</span><span class="s2">};</span>
+
+        <span class="s3">// Packet counters</span>
+        <span class="s1">Map</span><span class="s2">&lt;</span><span class="s1">String</span><span class="s2">, </span><span class="s1">Long</span><span class="s2">&gt; </span><span class="s1">packetCount </span><span class="s2">= </span><span class="s0">new </span><span class="s1">HashMap</span><span class="s2">&lt;&gt;();</span>
+        <span class="s1">Map</span><span class="s2">&lt;</span><span class="s1">String</span><span class="s2">, </span><span class="s1">Long</span><span class="s2">&gt; </span><span class="s1">packetSize </span><span class="s2">= </span><span class="s0">new </span><span class="s1">HashMap</span><span class="s2">&lt;&gt;();</span>
+        <span class="s1">Map</span><span class="s2">&lt;</span><span class="s1">String</span><span class="s2">, </span><span class="s1">TrafficStats</span><span class="s2">&gt; </span><span class="s1">ipStats </span><span class="s2">= </span><span class="s0">new </span><span class="s1">HashMap</span><span class="s2">&lt;&gt;();</span>
+
+
+        <span class="s3">// Thresholds</span>
+
+        <span class="s0">int </span><span class="s1">windowSize </span><span class="s2">= </span><span class="s5">5</span><span class="s2">;</span>
+        <span class="s0">double </span><span class="s1">multiplier </span><span class="s2">= </span><span class="s5">2.0</span><span class="s2">;</span>
+        <span class="s0">long </span><span class="s1">timeWindow </span><span class="s2">= </span><span class="s5">5_000</span><span class="s2">;</span>
+        <span class="s0">long </span><span class="s1">lastChecked </span><span class="s2">= </span><span class="s1">System</span><span class="s2">.</span><span class="s1">currentTimeMillis</span><span class="s2">();</span>
+
+        <span class="s0">try </span><span class="s2">{</span>
+            <span class="s1">ProcessBuilder processBuilder </span><span class="s2">= </span><span class="s0">new </span><span class="s1">ProcessBuilder</span><span class="s2">(</span><span class="s1">command</span><span class="s2">);</span>
+            <span class="s1">Process process </span><span class="s2">= </span><span class="s1">processBuilder</span><span class="s2">.</span><span class="s1">start</span><span class="s2">();</span>
+
+            <span class="s1">BufferedReader reader </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BufferedReader</span><span class="s2">(</span><span class="s0">new </span><span class="s1">InputStreamReader</span><span class="s2">(</span><span class="s1">process</span><span class="s2">.</span><span class="s1">getInputStream</span><span class="s2">()));</span>
+            <span class="s1">String line</span><span class="s2">;</span>
+
+            <span class="s3">// (timestamp, protocol, source, destination, flags, size)</span>
+            <span class="s1">Pattern pattern </span><span class="s2">= </span><span class="s1">Pattern</span><span class="s2">.</span><span class="s1">compile</span><span class="s2">(</span><span class="s4">&quot;^(</span><span class="s0">\\</span><span class="s4">d{2}:</span><span class="s0">\\</span><span class="s4">d{2}:</span><span class="s0">\\</span><span class="s4">d{2}</span><span class="s0">\\</span><span class="s4">.</span><span class="s0">\\</span><span class="s4">d{6}).*?(</span><span class="s0">\\</span><span class="s4">S+) (</span><span class="s0">\\</span><span class="s4">S+) &gt; (</span><span class="s0">\\</span><span class="s4">S+):.*?Flags </span><span class="s0">\\</span><span class="s4">[(.*?)</span><span class="s0">\\</span><span class="s4">].*?length (</span><span class="s0">\\</span><span class="s4">d+).*?$&quot;</span><span class="s2">);</span>
+
+            <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;Filtered tcpdump output:&quot;</span><span class="s2">);</span>
+            <span class="s0">while </span><span class="s2">((</span><span class="s1">line </span><span class="s2">= </span><span class="s1">reader</span><span class="s2">.</span><span class="s1">readLine</span><span class="s2">()) != </span><span class="s0">null</span><span class="s2">) {</span>
+                <span class="s1">Matcher matcher </span><span class="s2">= </span><span class="s1">pattern</span><span class="s2">.</span><span class="s1">matcher</span><span class="s2">(</span><span class="s1">line</span><span class="s2">);</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">find</span><span class="s2">()) {</span>
+                    <span class="s1">String timestamp </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">1</span><span class="s2">);</span>
+                    <span class="s1">String protocol </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">2</span><span class="s2">);</span>
+                    <span class="s1">String source </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">3</span><span class="s2">);</span>
+                    <span class="s1">String destination </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">4</span><span class="s2">);</span>
+                    <span class="s1">String flags </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">5</span><span class="s2">);</span>
+                    <span class="s1">String packetSizeStr </span><span class="s2">= </span><span class="s1">matcher</span><span class="s2">.</span><span class="s1">group</span><span class="s2">(</span><span class="s5">6</span><span class="s2">);</span>
+
+                    <span class="s0">long </span><span class="s1">packetSizeValue </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">parseLong</span><span class="s2">(</span><span class="s1">packetSizeStr</span><span class="s2">);</span>
+
+                    <span class="s3">// Update packet count and size</span>
+                    <span class="s1">packetCount</span><span class="s2">.</span><span class="s1">put</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">packetCount</span><span class="s2">.</span><span class="s1">getOrDefault</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s5">0L</span><span class="s2">) + </span><span class="s5">1</span><span class="s2">);</span>
+                    <span class="s1">packetSize</span><span class="s2">.</span><span class="s1">put</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">packetSize</span><span class="s2">.</span><span class="s1">getOrDefault</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s5">0L</span><span class="s2">) + </span><span class="s1">packetSizeValue</span><span class="s2">);</span>
+
+                    <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;Time: &quot; </span><span class="s2">+ </span><span class="s1">timestamp </span><span class="s2">+ </span><span class="s4">&quot;, Protocol: &quot; </span><span class="s2">+ </span><span class="s1">protocol </span><span class="s2">+ </span><span class="s4">&quot;, Source: &quot; </span><span class="s2">+ </span><span class="s1">source </span><span class="s2">+ </span><span class="s4">&quot;, Destination: &quot; </span><span class="s2">+ </span><span class="s1">destination </span><span class="s2">+ </span><span class="s4">&quot;, Flags: &quot; </span><span class="s2">+ </span><span class="s1">flags </span><span class="s2">+ </span><span class="s4">&quot;, Size: &quot; </span><span class="s2">+ </span><span class="s1">packetSizeStr</span><span class="s2">);</span>
+                <span class="s2">}</span>
+                    <span class="s0">if </span><span class="s2">(</span><span class="s1">System</span><span class="s2">.</span><span class="s1">currentTimeMillis</span><span class="s2">() - </span><span class="s1">lastChecked </span><span class="s2">&gt;= </span><span class="s1">timeWindow</span><span class="s2">) {</span>
+                        <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;</span><span class="s0">\n</span><span class="s4">--- Checking for anomalies ---&quot;</span><span class="s2">);</span>
+                        <span class="s0">for </span><span class="s2">(</span><span class="s1">Map</span><span class="s2">.</span><span class="s1">Entry</span><span class="s2">&lt;</span><span class="s1">String</span><span class="s2">, </span><span class="s1">Long</span><span class="s2">&gt; </span><span class="s1">entry </span><span class="s2">: </span><span class="s1">packetCount</span><span class="s2">.</span><span class="s1">entrySet</span><span class="s2">()) {</span>
+                            <span class="s1">String ip </span><span class="s2">= </span><span class="s1">entry</span><span class="s2">.</span><span class="s1">getKey</span><span class="s2">();</span>
+                            <span class="s0">long </span><span class="s1">count </span><span class="s2">= </span><span class="s1">entry</span><span class="s2">.</span><span class="s1">getValue</span><span class="s2">();</span>
+
+                            <span class="s1">TrafficStats stats </span><span class="s2">= </span><span class="s1">ipStats</span><span class="s2">.</span><span class="s1">computeIfAbsent</span><span class="s2">(</span><span class="s1">ip</span><span class="s2">, </span><span class="s1">k -&gt; </span><span class="s0">new </span><span class="s1">TrafficStats</span><span class="s2">(</span><span class="s1">windowSize</span><span class="s2">));</span>
+                            <span class="s0">boolean </span><span class="s1">isAnomaly </span><span class="s2">= </span><span class="s1">stats</span><span class="s2">.</span><span class="s1">isAboveUpperBand</span><span class="s2">(</span><span class="s1">count</span><span class="s2">, </span><span class="s1">multiplier</span><span class="s2">);</span>
+
+                            <span class="s3">// DoS detection</span>
+                            <span class="s0">if </span><span class="s2">(</span><span class="s1">isAnomaly </span><span class="s2">&amp;&amp; </span><span class="s1">stats</span><span class="s2">.</span><span class="s1">getMean</span><span class="s2">() != </span><span class="s5">0</span><span class="s2">) {</span>
+                                <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s4">&quot;BOOLLINGER ALERT: DoS suspected from &quot; </span><span class="s2">+ </span><span class="s1">ip </span><span class="s2">+</span>
+                                        <span class="s4">&quot; (Packets: &quot; </span><span class="s2">+ </span><span class="s1">count </span><span class="s2">+ </span><span class="s4">&quot;, Mean: &quot; </span><span class="s2">+ </span><span class="s1">stats</span><span class="s2">.</span><span class="s1">getMean</span><span class="s2">() +</span>
+                                        <span class="s4">&quot;, StdDev: &quot; </span><span class="s2">+ </span><span class="s1">stats</span><span class="s2">.</span><span class="s1">getStdDev</span><span class="s2">() + </span><span class="s4">&quot;)&quot;</span><span class="s2">);</span>
+                            <span class="s2">}</span>
+                            <span class="s1">stats</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">count</span><span class="s2">);</span>
+                        <span class="s2">}</span>
+                        <span class="s1">packetCount</span><span class="s2">.</span><span class="s1">clear</span><span class="s2">();</span>
+                        <span class="s1">packetSize</span><span class="s2">.</span><span class="s1">clear</span><span class="s2">();</span>
+                        <span class="s1">lastChecked </span><span class="s2">= </span><span class="s1">System</span><span class="s2">.</span><span class="s1">currentTimeMillis</span><span class="s2">();</span>
+
+                    <span class="s2">}</span>
+                <span class="s2">}</span>
+            <span class="s2">} </span><span class="s0">catch</span><span class="s2">(</span><span class="s1">IOException e</span><span class="s2">){</span>
+                <span class="s0">throw new </span><span class="s1">RuntimeException</span><span class="s2">(</span><span class="s1">e</span><span class="s2">);</span>
+            <span class="s2">}</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+</pre>
+</body>
+</html>
