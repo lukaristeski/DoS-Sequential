@@ -1,35 +1,55 @@
-import java.util.LinkedList;
+// TrafficStats.java
+import java.util.*;
 
 public class TrafficStats {
-    private final LinkedList<Long> history = new LinkedList<>();
-    private final int maxWindow;
+    private final Map<String, LinkedList<Long>> trafficMap = new HashMap<>();
+    private final List<Integer> recentCounts = new ArrayList<>();
+    private final int maxWindowSize = 10;
 
-    public TrafficStats(int maxWindow) {
-        this.maxWindow = maxWindow;
-    }
+    public int incrementAndGet(String ip, int windowSize) {
+        long now = System.currentTimeMillis();
+        trafficMap.putIfAbsent(ip, new LinkedList<>());
+        LinkedList<Long> timestamps = trafficMap.get(ip);
+        timestamps.add(now);
 
-    public void add(long value) {
-        if (history.size() >= maxWindow) {
-            history.removeFirst();
+        // Remove old timestamps beyond the time window
+        while (!timestamps.isEmpty() && now - timestamps.peekFirst() > windowSize * 1000) {
+            timestamps.pollFirst();
         }
-        history.add(value);
+
+        int count = timestamps.size();
+
+        // Update stats
+        recentCounts.add(count);
+        if (recentCounts.size() > maxWindowSize) {
+            recentCounts.remove(0);
+        }
+
+        return count;
     }
 
     public double getMean() {
-        return history.stream().mapToLong(Long::longValue).average().orElse(0);
+        if (recentCounts.isEmpty()) return 0.0;
+        double sum = 0.0;
+        for (int c : recentCounts) {
+            sum += c;
+        }
+        return sum / recentCounts.size();
     }
 
     public double getStdDev() {
         double mean = getMean();
-        return Math.sqrt(history.stream()
-                .mapToDouble(v -> Math.pow(v - mean, 2))
-                .average()
-                .orElse(0));
+        if (recentCounts.isEmpty()) return 0.0;
+        double sumSquaredDiffs = 0.0;
+        for (int c : recentCounts) {
+            sumSquaredDiffs += Math.pow(c - mean, 2);
+        }
+        return Math.sqrt(sumSquaredDiffs / recentCounts.size());
     }
 
-    public boolean isAboveUpperBand(long current, double multiplier) {
+    public boolean isAboveUpperBand(int count, double multiplier) {
         double mean = getMean();
-        double std = getStdDev();
-        return current > mean + multiplier * std;
+        double stdDev = getStdDev();
+        return count > (mean + multiplier * stdDev);
     }
 }
