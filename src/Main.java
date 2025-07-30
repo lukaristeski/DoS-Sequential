@@ -8,12 +8,13 @@ public class Main {
         System.out.println("Starting DoS Detection System (Sequential)");
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("tcpdump", "-l", "-n", "tcp", "port", "8080");
+            ProcessBuilder pb = new ProcessBuilder("tcpdump", "-i", "enp0s3", "-l", "-n", "tcp", "port", "8080");
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
+
 
             Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)");
             TrafficStats stats = new TrafficStats(5000); // 5-second window

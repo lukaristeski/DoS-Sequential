@@ -1,11 +1,12 @@
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TrafficStats {
     private final long windowDurationMs;
     private final Map<String, Integer> ipCounts = new HashMap<>();
     private long windowStartTime;
 
-    private final int THRESHOLD = 20; // Adjust if needed
+    private final int THRESHOLD = 20; // threshold for DoS alert
 
     public TrafficStats(long windowDurationMs) {
         this.windowDurationMs = windowDurationMs;
