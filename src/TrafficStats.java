@@ -31,6 +31,7 @@ public class TrafficStats {
         double mean = getMean();
         double std = getStdDev();
         double upper = mean + multiplier * std;
+        System.out.printf("TrafficStats Debug -> current: %d, mean: %.2f, std: %.2f, upper threshold: %.2f%n", current, mean, std, upper);
         return current > upper;
     }
 }

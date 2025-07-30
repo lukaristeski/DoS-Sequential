@@ -18,8 +18,8 @@ public class Main {
         Map<String, TrafficStats> ipStats = new HashMap<>();
 
         // Thresholds
-        int windowSize = 5;
-        double multiplier = 2.0;
+        int windowSize = 3;
+        double multiplier = 1.0;
         long timeWindow = 5_000;
         long lastChecked = System.currentTimeMillis();
 
@@ -59,7 +59,10 @@ public class Main {
                 }
 
                 if (System.currentTimeMillis() - lastChecked >= timeWindow) {
-                    System.out.println("\n--- Checking for anomalies ---");
+                    System.out.println("\n--- Checking for anomalies --- ");
+
+                    int absoluteThreshold = 1000;
+
                     for (Map.Entry<String, Long> entry : packetCount.entrySet()) {
                         String ip = entry.getKey();
                         long count = entry.getValue();
@@ -67,11 +70,17 @@ public class Main {
                         TrafficStats stats = ipStats.computeIfAbsent(ip, k -> new TrafficStats(windowSize));
                         boolean isAnomaly = stats.isAboveUpperBand(count, multiplier);
 
+                        System.out.printf("IP: %s, Count: %d%n", ip, count);
+                        System.out.printf("Mean: %.2f, StdDev: %.2f%n", stats.getMean(), stats.getStdDev());
+
                         // DoS detection alert
                         if (isAnomaly && stats.getMean() != 0) {
                             System.out.println("BOLLINGER ALERT: DoS suspected from " + ip +
                                     " (Packets: " + count + ", Mean: " + stats.getMean() +
                                     ", StdDev: " + stats.getStdDev() + ")");
+                        }
+                        if (count > absoluteThreshold) {
+                            System.out.println("ABSOLUTE ALERT: Possible DoS from: " + ip + "with" + count + "requests");
                         }
                         stats.add(count);
                     }
