@@ -22,13 +22,14 @@ public class TrafficStats {
     public double getStdDev() {
         double mean = getMean();
         return Math.sqrt(history.stream()
-                .mapToDouble(val -> Math.pow(val - mean, 2))
+                .mapToDouble(v -> Math.pow(v - mean, 2))
                 .average()
                 .orElse(0));
     }
 
     public boolean isAboveUpperBand(long current, double multiplier) {
-        double upper = getMean() + multiplier * getStdDev();
-        return current > upper;
+        double mean = getMean();
+        double std = getStdDev();
+        return current > mean + multiplier * std;
     }
 }

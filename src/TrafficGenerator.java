@@ -5,8 +5,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TrafficGenerator {
-    private static final int NUM_THREADS = 20;
-    private static final int REQUESTS_PER_THREAD = 10;
+    private static final int NUM_THREADS = 50;
+    private static final int REQUESTS_PER_THREAD = 100;
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
