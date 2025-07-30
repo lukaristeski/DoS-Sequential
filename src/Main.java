@@ -9,17 +9,15 @@ import java.util.regex.Pattern;
 public class Main {
 
     public static void main(String[] args) {
-        // tcpdump
-        String[] command = {"tcpdump", "-i", "any", "port", "8080"};
+        // tcpdump command with -n to disable hostname resolution
+        String[] command = {"tcpdump", "-i", "any", "-n", "port", "9090"};
 
         // Packet counters
         Map<String, Long> packetCount = new HashMap<>();
         Map<String, Long> packetSize = new HashMap<>();
         Map<String, TrafficStats> ipStats = new HashMap<>();
 
-
         // Thresholds
-
         int windowSize = 5;
         double multiplier = 2.0;
         long timeWindow = 5_000;
@@ -32,28 +30,34 @@ public class Main {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
-            // (timestamp, protocol, source, destination, flags, size)
+            // Pattern: (timestamp, protocol, source, destination, flags, size)
             Pattern pattern = Pattern.compile("^(\\d{2}:\\d{2}:\\d{2}\\.\\d{6}).*?(\\S+) (\\S+) > (\\S+):.*?Flags \\[(.*?)\\].*?length (\\d+).*?$");
 
             System.out.println("Filtered tcpdump output:");
+
             while ((line = reader.readLine()) != null) {
                 Matcher matcher = pattern.matcher(line);
                 if (matcher.find()) {
                     String timestamp = matcher.group(1);
                     String protocol = matcher.group(2);
-                    String source = matcher.group(3);
+                    String sourceWithPort = matcher.group(3);
                     String destination = matcher.group(4);
                     String flags = matcher.group(5);
                     String packetSizeStr = matcher.group(6);
 
                     long packetSizeValue = Long.parseLong(packetSizeStr);
 
-                    // Update packet count and size
-                    packetCount.put(source, packetCount.getOrDefault(source, 0L) + 1);
-                    packetSize.put(source, packetSize.getOrDefault(source, 0L) + packetSizeValue);
+                    // Extract source IP without port by removing last '.' and after
+                    int lastDotIndex = sourceWithPort.lastIndexOf('.');
+                    String sourceIp = (lastDotIndex != -1) ? sourceWithPort.substring(0, lastDotIndex) : sourceWithPort;
 
-                    System.out.println("Time: " + timestamp + ", Protocol: " + protocol + ", Source: " + source + ", Destination: " + destination + ", Flags: " + flags + ", Size: " + packetSizeStr);
+                    // Update packet count and size for source IP only
+                    packetCount.put(sourceIp, packetCount.getOrDefault(sourceIp, 0L) + 1);
+                    packetSize.put(sourceIp, packetSize.getOrDefault(sourceIp, 0L) + packetSizeValue);
+
+                    System.out.println("Time: " + timestamp + ", Protocol: " + protocol + ", Source: " + sourceIp + ", Destination: " + destination + ", Flags: " + flags + ", Size: " + packetSizeStr);
                 }
+
                 if (System.currentTimeMillis() - lastChecked >= timeWindow) {
                     System.out.println("\n--- Checking for anomalies ---");
                     for (Map.Entry<String, Long> entry : packetCount.entrySet()) {
@@ -63,9 +67,9 @@ public class Main {
                         TrafficStats stats = ipStats.computeIfAbsent(ip, k -> new TrafficStats(windowSize));
                         boolean isAnomaly = stats.isAboveUpperBand(count, multiplier);
 
-                        // DoS detection
+                        // DoS detection alert
                         if (isAnomaly && stats.getMean() != 0) {
-                            System.out.println("BOOLLINGER ALERT: DoS suspected from " + ip +
+                            System.out.println("BOLLINGER ALERT: DoS suspected from " + ip +
                                     " (Packets: " + count + ", Mean: " + stats.getMean() +
                                     ", StdDev: " + stats.getStdDev() + ")");
                         }
@@ -74,10 +78,9 @@ public class Main {
                     packetCount.clear();
                     packetSize.clear();
                     lastChecked = System.currentTimeMillis();
-
                 }
             }
-        } catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

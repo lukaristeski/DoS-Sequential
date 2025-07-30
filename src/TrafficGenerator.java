@@ -10,7 +10,7 @@ public class TrafficGenerator {
 
     public static void main(String[] args) throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
-        String urlString = "http://localhost:8080";
+        String urlString = "http://localhost:9090";
 
         for (int i = 0; i < NUM_THREADS; i++) {
             executor.submit(() -> {
