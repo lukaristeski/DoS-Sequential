@@ -1,36 +1,36 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedList;
 
 public class TrafficStats {
-    private final long windowDurationMs;
-    private final Map<String, Integer> ipCounts = new HashMap<>();
-    private long windowStartTime;
+    private final LinkedList<Long> history = new LinkedList<>();
+    private final int maxWindow;
 
-    private final int THRESHOLD = 20; // threshold for DoS alert
-
-    public TrafficStats(long windowDurationMs) {
-        this.windowDurationMs = windowDurationMs;
-        this.windowStartTime = System.currentTimeMillis();
+    public TrafficStats(int maxWindow){
+        this.maxWindow = maxWindow;
     }
 
-    public void record(String ip) {
-        long currentTime = System.currentTimeMillis();
-
-        if (currentTime - windowStartTime >= windowDurationMs) {
-            System.out.println("--- Window Summary ---");
-            for (Map.Entry<String, Integer> entry : ipCounts.entrySet()) {
-                if (entry.getValue() >= THRESHOLD) {
-                    System.out.printf("Possible DoS attack from %s: %d requests%n", entry.getKey(), entry.getValue());
-                } else {
-                    System.out.printf("%s: %d requests (OK)%n", entry.getKey(), entry.getValue());
-                }
-            }
-            System.out.println("----------------------");
-
-            ipCounts.clear();
-            windowStartTime = currentTime;
+    public void add(long value) {
+        if (history.size() >= maxWindow){
+            history.removeFirst();
         }
+        history.add(value);
+    }
 
-        ipCounts.put(ip, ipCounts.getOrDefault(ip, 0) + 1);
+    public double getMean(){
+        return history.stream().mapToLong(Long::longValue).average().orElse(0);
+    }
+
+    public double getStdDev(){
+        double mean = getMean();
+        return Math.sqrt(history.stream()
+                .mapToDouble(v -> Math.pow(v-mean, 2))
+                .average()
+                .orElse(0));
+    }
+
+    public boolean isAboveUpperBand(long current, double multiplier){
+        double mean = getMean();
+        double std = getStdDev();
+        double upper = mean + multiplier * std;
+        return current > upper;
     }
 }
